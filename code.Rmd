@@ -1,0 +1,69 @@
+---
+title: "Análisis de datos Ómicos - PAC 2 "
+author: "Maria Lucas"
+date: "2023-05-14"
+output: word_document
+---
+
+# Selección y carga del dataset
+
+He seleccionado el set de datos con GEO serie "GSE6077". Éste es un estudio de sobreexpresión de un proto-oncogen llamado Nmyc. 
+
+Primeramente, examinamos la phenoData para poder determinar las variables de interés. Las muestras con las que trabajamos son muestras de pulmón de ratón (Mus Musculus). Se ha realizado una extración de RNA total con RNeasy y un análisis de la expresión con array de Affymetrix.
+
+El objeto del estudio es determinar las diferencias de expresión entre dos líneas celulares, una  wild type (muestras GSM140827.CEL y GSM140863.CEL) y una con nmyc sobreexpresado (muestras GSM140864.CEL y GSM140865.CEL). Con ésta información podemos crear el objeto targets con la variable de interés (WT o OE), en mi caso he decido marcarla con dummy coding con 1 para WT y 0 para OE. 
+
+```{r}
+# Install and load GEOquery package
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("GEOquery")
+library(GEOquery)
+
+# Set GEO accession number
+gse = "GSE6077"
+
+# Download and load series matrix file and extract phenoData
+gse_data = getGEO(gse, GSEMatrix = TRUE)
+pheno = pData(phenoData(gse_data[[1]]))
+print(pheno)
+
+# Install and load fastDummies package
+if (!requireNamespace("fastDummies", quietly = TRUE))
+    install.packages("fastDummies")
+library(fastDummies)
+
+# Create targets object by refining the phenoData
+targets = AnnotatedDataFrame(pheno[8]) # Copy 8th column of phenoData
+colnames(targets) = "WT" # Change name column to WT
+targets$WT[targets$WT == 'whole lung E18 normal'] <- '1' # Normal = 1
+targets$WT[targets$WT == 'whole lung E18 sftpc-nmyc'] <- '0' # Overexpressed = 0
+print(targets)
+```
+
+Ahora que tenemos correctamente creado el objeto targets, podemos pasar a la carga de datos RAW. Descargamos los datos con el número de serie correspondiente buscando en NCBI (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE6077). Extraemos los archivos CEL en la carpeta correspondiente y procedemos a la carga de datos RAW mediante el uso del paquete affy.
+
+![](C:\Users\Arialux\Documents\ShareX\Screenshots\2023-05\SumatraPDF_ki5XjOR6yp.png)
+
+```{r}
+# BiocManager::install("affy")
+library(affy)
+
+setwd("D:/Antiguos estudios/MASTER2/Sem2/Ómica/PAC2/OMICA-2")
+workingDir = getwd()
+celfilesDir = file.path(workingDir,"celfiles")
+
+filenames = c('GSM140827.CEL', 'GSM140863.CEL', 'GSM140864.CEL', 'GSM140865.CEL')
+rawData = read.affybatch(filenames=file.path(celfilesDir, filenames), phenoData = targets,compress = FALSE)
+```
+
+
+
+
+# Random BS GO
+https://support.bioconductor.org/p/41945/
+https://support.bioconductor.org/p/64888/
+https://support.bioconductor.org/p/46513/
+https://rdrr.io/bioc/Biobase/man/phenoData.html
+https://support.bioconductor.org/p/64888/
+

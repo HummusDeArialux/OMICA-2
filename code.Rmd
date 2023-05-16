@@ -32,6 +32,7 @@ output: word_document
  BiocManager::install("org.Mm.eg.db")
  BiocManager::install("ReactomePA")
  BiocManager::install("reactome.db")
+ BiocManager::install("moe430a.db")
 ```
 
 
@@ -189,6 +190,161 @@ Heatmap falso del array de expresiones que muestra las distancias entre arrays. 
 # Normalización
 
 Antes de empezar los análisis de expresión es muy importante normalizar los datos para hacerlos comparables e intentar eliminar la variabilidad que no tenga origen biológico. 
+
+```{r}
+eset = rma(rawData)
+print(eset)
+```
+# Filtrado
+
+Realizaremos un filtrado de genes no específico, eliminando genes por características no relacionadas con el tema del estudio. En específico, eliminaremos genes sin identificador ENTREZID y genes que varían poco usando el rango interquartil quedándonos con el 25% más variable que tienen ENTREZID. El filtrado nos permite reducir el número de genes de estudio y por tanto reducir el número de tests estadísticos a realizar, reduciendo así el error estadístico.
+
+```{r}
+library(genefilter)
+annotation(eset) = "moe430a"
+eset_filtered = nsFilter(eset, var.func = IQR, var.cutoff = 0.75, var.filter = TRUE, require.entrez = TRUE, filterByQuantile = TRUE)
+print(eset_filtered)
+
+# Extraemos la matriz de datos filtrados
+filteredEset = eset_filtered$eset
+expressionSet = exprs(filteredEset)
+colnames(expressionSet) = pData(filteredEset)$ShortName
+```
+
+En este caso vemos como se han eliminado 8298 valores repetidos, 9818 por baja variabilidad y 1288 por falta de identificador ENTREZ. Ahora contamos con 3273 genes.
+
+# Análisis
+
+### Matriz de diseño
+
+La matriz de diseño es una tabla que contiene la información de cada muestra con respecto a su grupo experimental. En nuestro caso tenemos 4 muestras así que contaremos con 4 filas, y sólo tenemos un factor experimental (tipo de línea celular) que tiene dos posibles opciones (WT o OE), así que tendremos 2 columnas.
+
+```{r}
+# Matriz de diseño
+library(limma)
+treat = pData(filteredEset)$Class
+lev = factor(treat, levels = unique(treat))
+designMat<- model.matrix(~0+lev)
+colnames(designMat) = levels(lev)
+rownames(designMat) = sampleNames
+print(designMat)
+```
+
+### Matriz de contrastes
+
+La matriz de contrastes describe las comparaciones entre grupos que queremos realizar. Tiene tantas columnas como comparaciones y tantas filas como grupos. Cada comparación o contraste se representa por un 1 y un -1 en las filas a comparar.
+
+En nuestro caso tenemos un diseño muy simple, queremos comparar los efectos de sobreexpresar nmyc, así que compararemmos WT vs OE.  
+
+```{r}
+# Matriz de contrastes
+cont.matrix = makeContrasts(OEvsWT = OE-WT, levels = designMat)
+comparisonName = "Efecto de la sobreexpresion"
+print(cont.matrix)
+```
+### Estimación del modelo
+
+```{r}
+fit = lmFit(filteredData, designMat)
+fit.main = contrasts.fit(fit, cont.matrix)
+fit.main = eBayes(fit.main)
+
+topTab = topTable(fit.main, number = nrow(fit.main), coef = "OEvsWT", adjust = "fdr", lfc = 3, p.value = 0.05)
+
+dim(topTab)
+head(topTab)
+```
+
+# Anotación de resultados
+
+Extraemos los identificadores de los genes a ENTREZID, SYMBOL y ENSEMBL.
+
+```{r}
+library(moe430a.db)
+keytypes(moe430a.db)
+anotaciones = AnnotationDbi::select(moe430a.db, keys = rownames(filteredData), columns = c("ENTREZID", "SYMBOL", "ENSEMBL"))
+
+# Añadimos las columnas a toptable
+library(dplyr)
+topTabAnotada = topTab %>% # Copiamos la topTable
+  mutate(PROBEID = rownames(topTab)) %>% 
+  left_join(anotaciones) %>% # Añadimos las anotaciones
+  arrange(P.Value) %>%
+  select(7:10, 1:6)
+
+head(topTabAnotada)
+```
+
+# Resultados
+
+### Volcano plot
+
+```{r}
+genenames = AnnotationDbi::select(moe430a.db, rownames(fit.main), c("SYMBOL"))$SYMBOL
+volcanoplot(fit.main, highlight = 10, names = genenames, main = paste("Genes diferencialmente expresados", colnames(cont.matrix), sep = "\n"))
+abline(v = c(-3, 3))
+```
+
+Recordamos que los genes más diferencialmente expresados son aquellos más a los extremos y arriba. 
+
+### Heatmap
+
+```{r}
+# Seleccionamos las filas
+selectedRows = rownames(filteredData) %in% rownames(topTab)
+selectedData = filteredData[selectedRows,]
+
+# Heatmap
+library(gplots)
+my_palette <- colorRampPalette(c("blue", "red"))(n = 299)
+heatmap.2(selectedData,
+         Rowv = TRUE,
+         Colv = TRUE,
+         main = "HeatMap OEvsWT FC>=3",
+         scale = "row",
+         col = my_palette,
+         sepcolor = "white",
+         sepwidth = c(0.05,0.05),
+         cexRow = 0.5,
+         cexCol = 0.9,
+         key = TRUE,
+         keysize = 1.5,
+         density.info = "histogram",
+         ColSideColors = sampleColor, 
+         tracecol = NULL,
+         dendrogram = "none",
+         srtCol = 30)
+```
+
+Cabe destacar que nosotros ya hemos realizado un filtraje de los genes más variables, por ello no es sorpresa que los resultados muestren tantas diferencias entre ambos grupos.
+
+### Análisis de sobrerepresentación
+
+Éste tipo de análisis muestra si entre las anotaciones de los genes, hay alguna categoría de GO que se repita más frecuentemente que si no hubiera expresión diferencial. Esto nos da una idea de a qué proceso biológico estan asociados los genes más variables en el estudio.
+
+```{r}
+library(moe430a.db)
+probesUniverse = rownames(filteredData)
+entrezUniverse = AnnotationDbi::select(moe430a.db, probesUniverse, "ENTREZID")$ENTREZID
+topProbes = rownames(selectedData)
+entrezTop = AnnotationDbi::select(moe430a.db, topProbes, "ENTREZID")$ENTREZID
+
+# Eliminamos duplicados
+
+topGenes = entrezTop[!duplicated(entrezTop)]
+entrezUniverse = entrezUniverse[!duplicated(entrezUniverse)]
+
+# Usamos GOstats para analizar
+library(GOstats)
+GOparams = new("GOHyperGParams", geneIds = topGenes, universeGeneIds = entrezUniverse, annotation = "moe430a.db", ontology = "BP", pvalueCutoff = 0.01)
+
+GOhyper = hyperGTest(GOparams) # Test de Fisher
+head(summary(GOhyper))
+dim(summary(GOhyper))
+
+```
+
+Como podemos ver, el parámetro "GO:0019835" se encuentra 265 veces más (folds) de las esperadas. Éste corresponde a citolisis.
 
 # Random BS GO
 https://support.bioconductor.org/p/41945/

@@ -5,7 +5,6 @@ date: "2023-05-14"
 output: word_document
 ---
 
-```{r}
  if (!requireNamespace("BiocManager", quietly = TRUE))
      install.packages("BiocManager")
  BiocManager::install()
@@ -33,7 +32,6 @@ output: word_document
  BiocManager::install("ReactomePA")
  BiocManager::install("reactome.db")
  BiocManager::install("moe430a.db")
-```
 
 
 # Selección y carga del dataset
@@ -155,7 +153,7 @@ if (!require("BiocManager", quietly = TRUE))
 # BiocManager::install("arrayQualityMetrics")
 
 library(arrayQualityMetrics)
-arrayQualityMetrics(rawData, reporttitle = "Calidad_RawData", force = TRUE)
+# arrayQualityMetrics(rawData, reporttitle = "Calidad_RawData", force = TRUE)
 ```
 
 El paquete arrayQualityMetrics también nos da información sobre la calidad de las muestras, que es guardada en un directorio "Calidad_RawData". Parte de la información que nos muestra ya la hemos analizado mediante el boxplot, histograma, análisis de cluster, etc. Sin embargo, me parece adecuado mencionar la existencia de este paquete e incluir algunos de los análisis que aportan nueva información.
@@ -245,7 +243,7 @@ print(cont.matrix)
 ### Estimación del modelo
 
 ```{r}
-fit = lmFit(filteredData, designMat)
+fit = lmFit(expressionSet, designMat)
 fit.main = contrasts.fit(fit, cont.matrix)
 fit.main = eBayes(fit.main)
 
@@ -262,7 +260,7 @@ Extraemos los identificadores de los genes a ENTREZID, SYMBOL y ENSEMBL.
 ```{r}
 library(moe430a.db)
 keytypes(moe430a.db)
-anotaciones = AnnotationDbi::select(moe430a.db, keys = rownames(filteredData), columns = c("ENTREZID", "SYMBOL", "ENSEMBL"))
+anotaciones = AnnotationDbi::select(moe430a.db, keys = rownames(expressionSet), columns = c("ENTREZID", "SYMBOL", "ENSEMBL"))
 
 # Añadimos las columnas a toptable
 library(dplyr)
@@ -291,8 +289,8 @@ Recordamos que los genes más diferencialmente expresados son aquellos más a lo
 
 ```{r}
 # Seleccionamos las filas
-selectedRows = rownames(filteredData) %in% rownames(topTab)
-selectedData = filteredData[selectedRows,]
+selectedRows = rownames(expressionSet) %in% rownames(topTab)
+selectedData = expressionSet[selectedRows,]
 
 # Heatmap
 library(gplots)
@@ -324,7 +322,7 @@ Cabe destacar que nosotros ya hemos realizado un filtraje de los genes más vari
 
 ```{r}
 library(moe430a.db)
-probesUniverse = rownames(filteredData)
+probesUniverse = rownames(expressionSet)
 entrezUniverse = AnnotationDbi::select(moe430a.db, probesUniverse, "ENTREZID")$ENTREZID
 topProbes = rownames(selectedData)
 entrezTop = AnnotationDbi::select(moe430a.db, topProbes, "ENTREZID")$ENTREZID

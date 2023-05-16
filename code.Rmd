@@ -5,6 +5,36 @@ date: "2023-05-14"
 output: word_document
 ---
 
+```{r}
+ if (!requireNamespace("BiocManager", quietly = TRUE))
+     install.packages("BiocManager")
+ BiocManager::install()
+
+ install.packages("knitr")
+ install.packages("colorspace")
+ install.packages("gplots")
+ install.packages("ggplot2")
+ install.packages("ggrepel")
+ install.packages("htmlTable")
+ install.packages("prettydoc")
+ install.packages("devtools")
+ install.packages("BiocManager")
+ BiocManager::install("oligo")
+ BiocManager::install("pd.mogene.2.1.st")
+ BiocManager::install("arrayQualityMetrics")
+ BiocManager::install("pvca")
+ BiocManager::install("GEOquery")
+ # NOT NEEDED UNTIL ANALYSES ARE PERFORMED
+ BiocManager::install("limma")
+ BiocManager::install("genefilter")
+ BiocManager::install("mogene21sttranscriptcluster.db")
+ BiocManager::install("annotate")
+ BiocManager::install("org.Mm.eg.db")
+ BiocManager::install("ReactomePA")
+ BiocManager::install("reactome.db")
+```
+
+
 # Selección y carga del dataset
 
 He seleccionado el set de datos con GEO serie "GSE6077". Éste es un estudio de sobreexpresión de un proto-oncogen llamado Nmyc. 
@@ -13,13 +43,10 @@ He seleccionado el set de datos con GEO serie "GSE6077". Éste es un estudio de 
 
 Primeramente, examinamos la phenoData para poder determinar las variables de interés. Las muestras con las que trabajamos son muestras de pulmón de ratón (Mus Musculus). Se ha realizado una extración de RNA total con RNeasy y un análisis de la expresión con array de Affymetrix (array de un color).
 
-El objeto del estudio es determinar las diferencias de expresión entre dos líneas celulares, una  wild type (muestras GSM140827.CEL y GSM140863.CEL) y una con nmyc sobreexpresado (muestras GSM140864.CEL y GSM140865.CEL). Con ésta información podemos crear el objeto targets como un AnnotatedDataFrame con la variable de interés (WT o OE), en mi caso he decido marcarla con dummy coding con 1 para WT y 0 para OE. 
+El objeto del estudio es determinar las diferencias de expresión entre dos líneas celulares, una wild type (muestras GSM140827.CEL y GSM140863.CEL) y una con nmyc sobreexpresado (muestras GSM140864.CEL y GSM140865.CEL). Con ésta información podemos crear el objeto targets como un AnnotatedDataFrame con la variable de interés (WT o OE), en mi caso he decido marcarla con dummy coding con 1 para WT y 0 para OE. 
 
 ```{r}
-# Install and load GEOquery package
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install("GEOquery")
+# Load GEOquery package
 library(GEOquery)
 
 # Set GEO accession number
@@ -30,51 +57,47 @@ gse_data = getGEO(gse, GSEMatrix = TRUE)
 pheno = pData(phenoData(gse_data[[1]]))
 print(pheno[8:12]) # Print some of the more relevant data
 
-# Install and load fastDummies package
-if (!requireNamespace("fastDummies", quietly = TRUE))
-    install.packages("fastDummies")
-library(fastDummies)
+# Define targets
+filename = c('GSM140827.CEL', 'GSM140863.CEL', 'GSM140864.CEL', 'GSM140865.CEL')
+class = c('WT', 'WT', 'OE', 'OE')
+shortName = c('27_WT', '63_WT', '64_OE', '65_OE')
+color = c('red', 'red', 'blue', 'blue')
+# Create dataframe
+targetsDF = data.frame(Filename = filename, Class = class, ShortName = shortName, Color = color)
+print(targetsDF) # Print dataframe
+# Create object AnnotatedDataFrame with targets
+targets = AnnotatedDataFrame(targetsDF)
 
-# Create targets object by refining the phenoData
-
-# Create the dataframe of metadata to create the AnnotatedDataFrame
-metadata = data.frame(labelDescription = character(0), stringsAsFactors = FALSE)
-metadata[1, "labelDescription"] <- "Cell line: Wild type as 1, Overexpressed as 0"
-
-# Create the target object as an AnnotatedDataFrame
-targets = AnnotatedDataFrame( data = pheno[8], varMetadata = metadata) # Copy 8th column of phenoData
-colnames(targets) = "WT" # Change name column to WT
-targets$WT[targets$WT == 'whole lung E18 normal'] <- '1' # Normal = 1
-targets$WT[targets$WT == 'whole lung E18 sftpc-nmyc'] <- '0' # Overexpressed = 0
-print(targets)
+# Save some variables to plot
+sampleNames = as.character(targetsDF$ShortName)
+sampleColor = as.character(targetsDF$Color)
 ```
 
-Ahora que tenemos correctamente creado el objeto targets, podemos pasar a la carga de datos RAW. Descargamos los datos con el número de serie correspondiente buscando en NCBI (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE6077). Extraemos los archivos CEL en la carpeta correspondiente y procedemos a la carga de datos RAW mediante el uso del paquete affy.
+Ahora que tenemos correctamente creado el objeto targets, podemos pasar a la carga de datos RAW. Descargamos los datos con el número de serie correspondiente buscando en NCBI (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE6077). Extraemos los archivos CEL en la carpeta "celfiles" y procedemos a la carga de datos RAW mediante el uso del paquete affy.
 
 ```{r}
 # BiocManager::install("affy")
-library(affy)
+library(oligo)
 
 setwd("D:/Antiguos estudios/MASTER2/Sem2/Ómica/PAC2/OMICA-2")
 workingDir = getwd()
 celfilesDir = file.path(workingDir,"celfiles")
 
-filenames = c('GSM140827.CEL', 'GSM140863.CEL', 'GSM140864.CEL', 'GSM140865.CEL')
-rawData = read.affybatch(filenames=file.path(celfilesDir, filenames), phenoData = targets, compress = FALSE)
+rawData = read.celfiles(filenames=file.path(celfilesDir, targetsDF$Filename), phenoData = targets)
 
 print(rawData)
 ```
 
-# Control de calidad
+# Exploración y control de calidad
+
+Como veremos a continuación, no detectamos ningún problema con los datos. Así que tan sólo ejecutaremos el análisis de calidad antes de la normalización y no después.
 
 ### Histograma
 
 ```{r}
-affySampleNames <- rownames(pData(rawData))
-affyColores <- c(1,2,3,4)
-affyLineas <- c(1,2,3,4)
-hist(rawData)
-legend (x="topright", legend=affySampleNames , col=affyColores, lty=affyLineas)
+affyLineas <- c(1,2,1,2)
+hist(rawData, main="Signal distribution", col=sampleColor, lty=affyLineas)
+legend (x="topright", legend=sampleNames , col=sampleColor, lty=affyLineas, cex=0.7)
 ```
 
 Como podemos ver, los 4 arrays dibujan una distribución de similar forma y posición. Esto sugiere que las expresiones no han sido afectadas por ningún aspecto técnico, y que la ligera variación que vemos en GSM140863 se debe a efectos biológicos.
@@ -82,7 +105,7 @@ Como podemos ver, los 4 arrays dibujan una distribución de similar forma y posi
 ### Boxplot
 
 ```{r}
-boxplot(rawData, main="Distribución de las expresiones", col=affyColores, las=2)
+boxplot(rawData, which = "all", las = 2, main="Distribución de las expresiones", col=sampleColor, names = sampleNames, cel.axis = 0.6)
 ```
 
 Nuevamente, el boxplot nos da una idea de la intensidad de la expresión, que es muy similar en todos los arrays.
@@ -106,21 +129,66 @@ plotPCA <- function ( X, labels=NULL, colors=NULL, dataDesc="", scale=FALSE)
   title(titulo, cex=0.8)
 }
 
-plotPCA(exprs(rawData), labels=affySampleNames)
+plotPCA(exprs(rawData), labels=sampleNames, colors = sampleColor)
 ```
 
-El análisis de componentes principales nos permite detectar si las muestras se agrupan de forma "natural". En este caso vemos como las líneas "Wild Type" parecen estar agrupadas, mientras que las que presentan sobreexpresión se alejan del resto. Esto no tiene porque ser indicativo de la existencia de un problema, pero sí deberemos estar al cuidado de un posible efecto batch. Éste sucede cuando se observan diferencias entre muestras que fueron procesadas y analizadas separadamente, podría deberse a problemas técnicos en la hibridación, preparación o escaneo de las muestras. Por este tipo de efectos, es conveniente normalizar las muestras para así eliminar las diferencias sistemáticas entre muestras.
+El análisis de componentes principales nos permite detectar si las muestras se agrupan de forma "natural", ya que éste busca las principales fuentes de variabilidad en los datos. En este caso vemos como las líneas "Wild Type" parecen estar agrupadas, mientras que las que presentan sobreexpresión se alejan del resto. Esto no tiene porque ser indicativo de la existencia de un problema, pero sí deberemos estar al cuidado de un posible efecto batch. Éste sucede cuando se observan diferencias entre muestras que fueron procesadas y analizadas separadamente, podría deberse a problemas técnicos en la hibridación, preparación o escaneo de las muestras. Por este tipo de efectos, es conveniente normalizar las muestras para así eliminar las diferencias sistemáticas entre muestras.
+
+Los axis del gráfico nos muetran que el primer componente explica casi el 70% de la variabilidad de los datos, y el segundo componente el 22%. Este porcentaje es muy elevado, sobretodo para el primer componente, si nos fijamos bien, podríamos dibujar una línea vertical que nos separa los datos, así que con tan solo el primer componente podemos explicar la variabilidad de los datos y separar en las dos categorías los datos.
 
 ### Cluster Jerárquico
 
 ```{r}
-clust.euclid.average <- hclust(dist(t(exprs(rawData))),method="average")
-plot(clust.euclid.average, labels=colnames(exprs(rawData)), main="Hierarchical clustering of samples",  hang=-1, cex=0.7)
+clust.euclid.average = hclust(dist(t(exprs(rawData))),method="average")
+plot(clust.euclid.average, labels=sampleNames, main="Hierarchical clustering of samples",  hang=-1, cex=0.7)
 ```
 
-Al igual que en el análisis de componentes principales, vemos como las muestras Wild Type son más similares entre ellas, mientras que las Sobreexpresadas difieren más. Una posible explicación de ésta variación sería que efecto de las condiciones experimentales afecte tan sólo a un reducido número de genes. 
+Al igual que en el análisis de componentes principales, vemos como las muestras Wild Type son más similares entre ellas, mientras que las Sobreexpresadas difieren más. Una posible explicación de ésta variación sería que efecto de las condiciones experimentales afecte tan sólo a un reducido número de genes, o bien que haya algún error en la sobreexpresión de una de las réplicas. 
+
+# Control de calidad con ArrayQualityMetrics
+
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+# BiocManager::install("arrayQualityMetrics")
+
+library(arrayQualityMetrics)
+arrayQualityMetrics(rawData, reporttitle = "Calidad_RawData", force = TRUE)
+```
+
+El paquete arrayQualityMetrics también nos da información sobre la calidad de las muestras, que es guardada en un directorio "Calidad_RawData". Parte de la información que nos muestra ya la hemos analizado mediante el boxplot, histograma, análisis de cluster, etc. Sin embargo, me parece adecuado mencionar la existencia de este paquete e incluir algunos de los análisis que aportan nueva información.
+
+### Outliers
+
+![Outliers](C:/Users\Arialux\Documents\ShareX\Screenshots\2023-05\firefox_2dxk75sT6k.png)
+
+No observamos ningún array problemático. Se han realizado detección de outliers tanto por distancias entre arrays, boxplots y Ma plots, y en ninguno de los tres casos se supera el umbral. 
+
+### msd
+![msd](D:/Antiguos estudios\MASTER2\Sem2\Ómica\PAC2\OMICA-2\Calidad_RawData\msd)
+
+Los gráficos MSD son útiles para estudiar la calidad y variabilidad de los datos. Pueden detectar sesgos técnicos, outliers y efectos de batch. En ellos, el eje Y representa la desviación estándar de la intensidad (medida de la variablidad), y en el X la media de la intensidad (medida de expresión).
+
+En nuestro caso, la gran mayoría de genes presentan poca variabilidad en las muestras y observamos la línea roja prácticamente horizontal. Ciertos genes, sobretodo los de más expresión, sí presentan variabilidad. Esto puede deberse a que al contar con múltiples líneas celulares, en alguna de las líneas haya genes sobreexpresados y por lo tanto observemos variabilidad. Tiene sentido, pues contamos con dos líneas celulares con nmyc sobreexpresado que al ser un factor de transcripción, podría alterar la transcripción de múltiples genes.
+
+### MA-plot
+
+![ma](D:/Antiguos estudios\MASTER2\Sem2\Ómica\PAC2\OMICA-2\Calidad_RawData\ma)
+
+El MA-plot nos permite ver la calidad individual de cada array. En el eje M vemos el la dirección e intensidad del cambio en la expresión génica, mientras que en el eje A vemos la expresión media de cada gen entre las dos condiciones. Este tipo de gráficos son útiles para detectar sesgos sistemáticos o artefactos.
+
+En nuestro caso, no vemos ninguna anormalidad, podemos ver que los genes se distribuyen alrededor de M = 0 sin ver ningún patrón o tendencia clara. 
+
+### Heatmap
+
+![hm](D:/Antiguos estudios/MASTER2/Sem2/Ómica/PAC2/OMICA-2/Calidad_RawData/hm)
+
+Heatmap falso del array de expresiones que muestra las distancias entre arrays. No encontramos ninguna anormalidad. En este caso si vemos como las muestras sobreexpresadas son más similares entre ellas en cuanto a expresión que las WT en el cluster jerárquico.
 
 # Normalización
+
+Antes de empezar los análisis de expresión es muy importante normalizar los datos para hacerlos comparables e intentar eliminar la variabilidad que no tenga origen biológico. 
 
 # Random BS GO
 https://support.bioconductor.org/p/41945/

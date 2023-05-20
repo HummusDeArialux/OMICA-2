@@ -2,49 +2,40 @@
 title: "Análisis de datos Ómicos - PAC 2 "
 author: "Maria Lucas"
 date: "2023-05-14"
-output: word_document
+output: 
+  word_document:
+    toc: true
+    toc_depth: 4
+lang: Es-es
 ---
 
- if (!requireNamespace("BiocManager", quietly = TRUE))
-     install.packages("BiocManager")
- BiocManager::install()
-
- install.packages("knitr")
- install.packages("colorspace")
- install.packages("gplots")
- install.packages("ggplot2")
- install.packages("ggrepel")
- install.packages("htmlTable")
- install.packages("prettydoc")
- install.packages("devtools")
- install.packages("BiocManager")
- BiocManager::install("oligo")
- BiocManager::install("pd.mogene.2.1.st")
- BiocManager::install("arrayQualityMetrics")
- BiocManager::install("pvca")
- BiocManager::install("GEOquery")
- # NOT NEEDED UNTIL ANALYSES ARE PERFORMED
- BiocManager::install("limma")
- BiocManager::install("genefilter")
- BiocManager::install("mogene21sttranscriptcluster.db")
- BiocManager::install("annotate")
- BiocManager::install("org.Mm.eg.db")
- BiocManager::install("ReactomePA")
- BiocManager::install("reactome.db")
- BiocManager::install("moe430a.db")
+# Introducción
 
 
-# Selección y carga del dataset
 
-He seleccionado el set de datos con GEO serie "GSE6077". Éste es un estudio de sobreexpresión de un proto-oncogen llamado Nmyc. 
+# Objetivos
+
+- Evaluar la calidad de los datos obtenidos mediante microarrays Affymetrix para asegurar la fiabilidad de los resultados.
+- Identificar y cuantificar los genes que presentan expresión diferencial entre la línea celular con Nmyc sobreexpresado y la Wild type.
+- Analizar las anotaciones funcionales y vías biológicas asociadas a los genes diferencialmente expresados, con el fin de comprender los procesos biológicos afectados por la sobreexpresión de Nmyc.
+- Determinar la frecuencia y relevancia de las anotaciones funcionales identificadas en los genes de interés, para comprender mejor su implicación en la función celular y el desarrollo pulmonar.
+- Investigar las posibles implicaciones clínicas de los genes diferencialmente expresados, examinando su asociación con enfermedades pulmonares
+
+# Métodos
+
+### Obtención de los datos
+
+Los datos utilizados en este estudio corresponden al conjunto de datos GSE6077, disponible en el repositorio público del Gene Expression Omnibus (GEO) de NCBI. Para acceder a estos datos, se visitó el sitio web del GEO (https://www.ncbi.nlm.nih.gov/geo/) y se realizó una búsqueda utilizando el identificador GSE6077. Posteriormente, se descargaron los archivos de datos relevantes para el estudio, que incluyeron los archivos de expresión génica en formato CEL.
 
 ![](C:\Users\Arialux\Documents\ShareX\Screenshots\2023-05\SumatraPDF_ki5XjOR6yp.png)
 
-Primeramente, examinamos la phenoData para poder determinar las variables de interés. Las muestras con las que trabajamos son muestras de pulmón de ratón (Mus Musculus). Se ha realizado una extración de RNA total con RNeasy y un análisis de la expresión con array de Affymetrix (array de un color).
+Con el fin de organizar la información de las muestras experimentales, se procedió a la creación de un objeto llamado "targets" en el entorno de programación R. Se analizó el objeto phenoData que contiene información relevante sobre las características de cada muestra, como la condición experimental o la procedencia de las muestras. Se creó manualmente un dataframe que contenía los detalles de cada muestra: nombre del archivo, el grupo experimental al que pertenecía (Wild Type o Sobre expresado) y información para la posterior visualización de los datos (color y nombre de las muestras) (**Código 1**). La creación de este objeto permitió asignar las diferentes variables a columnas específicas, facilitando así el acceso y la manipulación de los datos durante el análisis.
 
-El objeto del estudio es determinar las diferencias de expresión entre dos líneas celulares, una wild type (muestras GSM140827.CEL y GSM140863.CEL) y una con nmyc sobreexpresado (muestras GSM140864.CEL y GSM140865.CEL). Con ésta información podemos crear el objeto targets como un AnnotatedDataFrame con la variable de interés (WT o OE), en mi caso he decido marcarla con dummy coding con 1 para WT y 0 para OE. 
+La carga de los datos se realizó utilizando el paquete "oligo" en R, que proporciona funciones específicas para el manejo de datos de microarrays Affymetrix. Los archivos CEL fueron importados mediante la función "read.celfiles()", que permitió leer y procesar los archivos de datos del microarray (**Código 2**). 
 
 ```{r}
+# Código 1
+
 # Load GEOquery package
 library(GEOquery)
 
@@ -72,9 +63,9 @@ sampleNames = as.character(targetsDF$ShortName)
 sampleColor = as.character(targetsDF$Color)
 ```
 
-Ahora que tenemos correctamente creado el objeto targets, podemos pasar a la carga de datos RAW. Descargamos los datos con el número de serie correspondiente buscando en NCBI (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE6077). Extraemos los archivos CEL en la carpeta "celfiles" y procedemos a la carga de datos RAW mediante el uso del paquete affy.
-
 ```{r}
+# Código 2
+
 # BiocManager::install("affy")
 library(oligo)
 
@@ -89,13 +80,61 @@ rawData = read.celfiles(filenames=file.path(celfilesDir, targetsDF$Filename), ph
 print(rawData)
 ```
 
-# Exploración y control de calidad
+### Exploración y control de calidad
+
+Antes de realizar el análisis de expresión diferencial, se llevó a cabo un riguroso control de calidad para asegurar la fiabilidad de los datos obtenidos a partir de los microarrays. Se utilizaron diversas herramientas y técnicas para evaluar la calidad global de los datos y detectar posibles problemas técnicos o artefactos que pudieran afectar los resultados del análisis.
+
+Se generó un histograma para visualizar la distribución de las intensidades de fluorescencia de las sondas en los microarrays. Esto permitió evaluar la simetría y la forma de la distribución de los datos, así como identificar posibles valores atípicos (**Código 3**). Además, se construyeron boxplots para examinar la distribución de las intensidades de fluorescencia en función de las diferentes muestras (**Código 4**). Estos gráficos proporcionaron información sobre la variabilidad entre las muestras y permitieron detectar posibles muestras que se desviaran significativamente de las demás.
+
+Se realizó un análisis de componentes principales para evaluar la variabilidad general de los datos y detectar patrones de agrupación o separación entre las muestras (**Código 5**). El ACP permitió reducir la dimensionalidad de los datos y visualizar la estructura global de los datos en un espacio de menor dimensión. Esto facilitó la identificación de posibles efectos de confusión o agrupación no deseados en los datos.
+
+Se llevó a cabo un análisis de cluster jerárquico para examinar la similitud o agrupación entre las muestras en función de sus perfiles de expresión génica (**Código 6**). Se utilizó la distancia euclidiana y el método de agrupación promedio ("average") para construir un dendrograma que representara las relaciones de similitud entre las muestras. Esto permitió identificar posibles agrupaciones o subgrupos de muestras con perfiles de expresión similares o diferentes.
+
+Finalmente, se utilizó el paquete "ArrayQualityMetrics" en R para realizar un control de calidad exhaustivo y automatizado de los datos de microarrays que complementó los análisis mencionados anteriormente (**Código 7**).
+
+Como veremos a continuación, tras llevar a cabo el control de calidad de los datos, no se detectaron problemas significativos que pudieran comprometer la fiabilidad de los resultados. Por lo tanto, se decidió realizar el análisis de calidad antes de la normalización y no se consideró necesario repetirlo posteriormente.
+
+### Pre-procesamiento
+
+Los datos de expresión génica obtenidos a partir de los microarrays se sometieron a un proceso de normalización para ajustar las diferencias sistemáticas entre las muestras y garantizar una comparabilidad adecuada. Se utilizó el método de normalización Robust Multi-array Average (RMA) mediante la función "rma" en R, aplicada a los datos brutos de los microarrays ("rawData") (**Código 8**).
+
+Para el filtrado de genes, se utilizó el paquete "genefilter" en R. Primero, se asignó el tipo de anotación de genes mediante la función "annotation", estableciéndolo como "moe430a". Esto permitió la asociación de las sondas de expresión con las anotaciones de genes correspondientes. A continuación, se aplicó un filtro basado en la variabilidad de la expresión génica utilizando la función "nsFilter". Se utilizó el Rango Intercuartílico (IQR) como medida de variabilidad y se estableció un umbral de corte del 75% para seleccionar el 25% de los genes con mayor variabilidad (**Código 9**).
+
+Con estos métodos de preprocesamiento, se logró la normalización de los datos brutos y el filtrado de genes con el objetivo de obtener un conjunto de datos de expresión génica de mayor calidad y relevancia para el análisis de expresión diferencial entre la línea celular con sobreexpresión de Nmyc y la línea Wild type.
+
+### Análisis
+
+Para llevar a cabo el análisis de expresión diferencial entre la línea celular Wild type y la línea con sobreexpresión de Nmyc, se construyó una matriz de diseño que refleja las condiciones experimentales de cada muestra (**Código 10**). Para nuestro estudio, se dispuso de un total de 4 muestras, lo que implicó la construcción de una matriz de diseño con 4 filas. Dado que nuestro factor experimental se basó en el tipo de línea celular, el cual tiene dos opciones posibles (WT u OE), la matriz de diseño se configuró con 2 columnas para representar estas condiciones experimentales distintas.
+
+Además, se creó una matriz de contrastes que especifica la comparación de interés en términos de los coeficientes del modelo lineal (**Código 11**). En este caso, se estableció un contraste entre Wild type y sobreexpresado, lo que permitirá identificar los genes que muestran una expresión diferencial significativa entre estas dos condiciones.
+
+Para realizar el análisis de expresión diferencial, se utilizó la función "lmFit" del paquete de Bioconductor en R. Se aplicó esta función a la matriz de expresión génica normalizada y filtrada ("expression"), utilizando la matriz de diseño y la matriz de contrastes previamente creadas (**Código 12**). La función "lmFit" se encargó de ajustar un modelo lineal a los datos de expresión génica y estimar los coeficientes del modelo asociados con los contrastes de interés. Estos coeficientes proporcionan estimaciones de la diferencia de expresión entre las condiciones Wild type y sobreexpresado para cada gen. La estimación del modelo lineal es un paso esencial para llevar a cabo el análisis de expresión diferencial y detectar los genes que presentan una expresión diferencial significativa entre las condiciones comparadas. Se genera una tabla de resultados que contiene información sobre los genes seleccionados en función del fold change (8) y el valor de p ajustado (0.05). 
+
+Seguidamente, se añadieron los identificadores de ENTREZID, SYMBOL y ENSEMBL a los genes resultantes de la tabla (**Código 13**). La anotación de los genes proporciona información relevante sobre la identidad y características de los genes diferencialmente expresados, lo que facilita su interpretación biológica y su posterior análisis funcional.
+
+Finalmente, con el objetivo de visualizar de manera gráfica los resultados del análisis de expresión diferencial, se generó un volcano plot (**Código 14**). Este tipo de gráfico representa los valores de logaritmo en base 2 del fold change en el eje x y los valores de logaritmo en base 10 del valor de p ajustado en el eje y. En el volcano plot, los genes con una expresión significativamente diferencial se resaltan mediante puntos que se sitúan en las regiones superiores y laterales del gráfico, dependiendo de su fold change y su valor de p ajustado. 
+
+Adicionalmente, se generó un heatmap para visualizar la expresión diferencial de los genes en las diferentes condiciones experimentales (**Código 15**). En este gráfico, cada fila representa un gen y cada columna representa una muestra. Los valores de expresión de los genes se representan mediante colores, lo que permite identificar patrones de expresión diferencial entre las condiciones.
+
+Con el objetivo de comprender mejor la función biológica de los genes diferencialmente expresados, se llevó a cabo un análisis de sobrerepresentación de categorías GO (Gene Ontology) (**Código 16**). Las categorías GO proporcionan anotaciones funcionales a los genes en términos de procesos biológicos, funciones moleculares y componentes celulares.
+
+# Resultados
+
+# Discusión
+
+# Referencias
+
+# Apéndice
+
+ 
 
 Como veremos a continuación, no detectamos ningún problema con los datos. Así que tan sólo ejecutaremos el análisis de calidad antes de la normalización y no después.
 
 ### Histograma
 
 ```{r}
+# Código 3
+
 affyLineas <- c(1,2,1,2) # Set line type
 hist(rawData, main="Signal distribution", col=sampleColor, lty=affyLineas)
 legend (x="topright", legend=sampleNames , col=sampleColor, lty=affyLineas, cex=0.7)
@@ -106,6 +145,7 @@ Como podemos ver, los 4 arrays dibujan una distribución de similar forma y posi
 ### Boxplot
 
 ```{r}
+# Código 4
 boxplot(rawData, which = "all", las = 2, main="Distribución de las expresiones", col=sampleColor, names = sampleNames, cel.axis = 0.6)
 ```
 
@@ -114,6 +154,8 @@ Nuevamente, el boxplot nos da una idea de la intensidad de la expresión, que es
 ### Análisis de componentes principales
 
 ```{r}
+# Código 5
+
 plotPCA <- function ( X, labels=NULL, colors=NULL, dataDesc="", scale=FALSE)
 {
   pcX<-prcomp(t(X), scale=scale) # o prcomp(t(X))
@@ -140,6 +182,7 @@ Los axis del gráfico nos muetran que el primer componente explica casi el 70% d
 ### Cluster Jerárquico
 
 ```{r}
+# Código 6
 clust.euclid.average = hclust(dist(t(exprs(rawData))),method="average")
 plot(clust.euclid.average, labels=sampleNames, main="Hierarchical clustering of samples",  hang=-1, cex=0.7)
 ```
@@ -149,11 +192,7 @@ Al igual que en el análisis de componentes principales, vemos como las muestras
 # Control de calidad con ArrayQualityMetrics
 
 ```{r}
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
-# BiocManager::install("arrayQualityMetrics")
-
+# Código 7
 library(arrayQualityMetrics)
 arrayQualityMetrics(rawData, reporttitle = "Calidad_RawData", force = TRUE)
 ```
@@ -192,6 +231,7 @@ Heatmap falso del array de expresiones que muestra las distancias entre arrays. 
 Antes de empezar los análisis de expresión es muy importante normalizar los datos para hacerlos comparables e intentar eliminar la variabilidad que no tenga origen biológico. 
 
 ```{r}
+# Código 8
 eset = rma(rawData) # Normalize rawData
 print(eset)
 ```
@@ -200,6 +240,7 @@ print(eset)
 Realizaremos un filtrado de genes no específico, eliminando genes por características no relacionadas con el tema del estudio. En específico, eliminaremos genes sin identificador ENTREZID y genes que varían poco usando el rango interquartil quedándonos con el 25% más variable que tienen ENTREZID. El filtrado nos permite reducir el número de genes de estudio y por tanto reducir el número de tests estadísticos a realizar, reduciendo así el error estadístico.
 
 ```{r}
+# Código 9
 library(genefilter)
 annotation(eset) = "moe430a" # Set annotation type
 # Filter 25% most changing genes
@@ -221,6 +262,8 @@ En este caso vemos como se han eliminado 8298 valores repetidos, 9818 por baja v
 La matriz de diseño es una tabla que contiene la información de cada muestra con respecto a su grupo experimental. En nuestro caso tenemos 4 muestras así que contaremos con 4 filas, y sólo tenemos un factor experimental (tipo de línea celular) que tiene dos posibles opciones (WT o OE), así que tendremos 2 columnas.
 
 ```{r}
+# Código 10
+
 library(limma)
 # Create design matrix
 treat = pData(filteredEset)$Class
@@ -238,6 +281,8 @@ La matriz de contrastes describe las comparaciones entre grupos que queremos rea
 En nuestro caso tenemos un diseño muy simple, queremos comparar los efectos de sobreexpresar nmyc, así que compararemmos WT vs OE.  
 
 ```{r}
+# Código 11
+
 # Create matrix contrast
 cont.matrix = makeContrasts(OEvsWT = OE-WT, levels = designMat)
 comparisonName = "Efecto de la sobreexpresion"
@@ -246,6 +291,8 @@ print(cont.matrix)
 ### Estimación del modelo
 
 ```{r}
+# Código 12
+
 # Fit model
 fit = lmFit(expressionSet, designMat)
 fit.main = contrasts.fit(fit, cont.matrix)
@@ -263,6 +310,8 @@ head(topTab)
 Extraemos los identificadores de los genes a ENTREZID, SYMBOL y ENSEMBL.
 
 ```{r}
+# Código 13
+
 library(moe430a.db)
 # Set annotations in ENTREZ, SYMBOL AND ENSEMBL
 keytypes(moe430a.db)
@@ -284,6 +333,7 @@ head(topTabAnotada)
 ### Volcano plot
 
 ```{r}
+# Código 14
 genenames = AnnotationDbi::select(moe430a.db, rownames(fit.main), c("SYMBOL"))$SYMBOL
 volcanoplot(fit.main, highlight = 10, names = genenames, main = paste("Genes diferencialmente expresados", colnames(cont.matrix), sep = "\n"))
 abline(v = c(-3, 3))
@@ -294,6 +344,7 @@ Recordamos que los genes más diferencialmente expresados son aquellos más a lo
 ### Heatmap
 
 ```{r}
+# Código 15
 # Select rows
 selectedRows = rownames(expressionSet) %in% rownames(topTab)
 selectedData = expressionSet[selectedRows,]
@@ -327,6 +378,7 @@ Cabe destacar que nosotros ya hemos realizado un filtraje de los genes más vari
 Éste tipo de análisis muestra si entre las anotaciones de los genes, hay alguna categoría de GO que se repita más frecuentemente que si no hubiera expresión diferencial. Esto nos da una idea de a qué proceso biológico estan asociados los genes más variables en el estudio.
 
 ```{r}
+# Código 16
 library(moe430a.db)
 # Set probes
 probesUniverse = rownames(expressionSet)

@@ -11,7 +11,23 @@ lang: Es-es
 
 # Introducción
 
+El estudio de los perfiles de expresión génica desempeña un papel crucial en la comprensión de los mecanismos moleculares que regulan el desarrollo y la función de los tejidos y organismos. En este informe, nos centramos en el análisis integrado de datos de expresión génica en muestras de pulmón de ratón en la etapa E-18.
 
+Las muestras utilizadas en este estudio corresponden a pulmones de ratón en la etapa de desarrollo embrionario E-18. El objetivo principal fue investigar las diferencias en la expresión génica entre una línea celular con sobreexpresión de Nmyc y la línea celular tipo salvaje (Wild type). Se ha demostrado que NMYC está involucrado en el desarrollo de varios tejidos y órganos, incluido el pulmón. Su sobreexpresión se ha asociado con la promoción del crecimiento tumoral, la resistencia a la apoptosis y la progresión de diferentes tipos de cáncer, incluido el cáncer de pulmón.
+
+En el contexto del desarrollo pulmonar, se ha sugerido que NMYC desempeña un papel clave en la proliferación y diferenciación de las células progenitoras pulmonares. La alteración de la expresión de NMYC puede tener un impacto significativo en la regulación de los programas de expresión génica necesarios para el desarrollo adecuado del pulmón. Por lo tanto, comprender los efectos de la sobreexpresión de NMYC en el perfil de expresión génica en el pulmón es de gran importancia para identificar las vías y procesos biológicos afectados y profundizar en nuestra comprensión de la función de NMYC en el desarrollo y la patología pulmonar.
+
+Se realizó una extracción de RNA total utilizando el kit RNeasy, que permitió obtener el RNA total de las muestras para su posterior análisis. Para medir los niveles de expresión de miles de genes, se utilizó un array de Affymetrix, una plataforma de microarray ampliamente utilizada en estudios transcriptómicos. Esta tecnología nos proporcionó información sobre la expresión génica en cada una de las muestras de pulmón de ratón E-18.
+
+En la metodología, se describen en detalle los pasos de procesamiento y análisis de los datos de microarray. Esto incluye el control de calidad de los datos para asegurar la fiabilidad de los resultados, así como la normalización y filtrado de genes para reducir el ruido y seleccionar aquellos genes con mayor variabilidad y significancia biológica.
+
+Mediante análisis estadísticos, se identificaron los genes diferencialmente expresados entre las líneas celulares con sobreexpresión de Nmyc y Wild type. Además, se aplicaron técnicas de visualización, como el análisis de componentes principales y el clúster jerárquico, para explorar las similitudes y diferencias en los perfiles de expresión génica entre las muestras.
+
+Los resultados obtenidos revelaron un conjunto de genes con expresión diferencial significativa entre las líneas celulares estudiadas. Además, se utilizaron herramientas gráficas como el volcano plot y el heatmap para visualizar los patrones de expresión diferencial de los genes identificados.
+
+Finalmente, se llevó a cabo un análisis de sobrerepresentación de categorías GO para identificar las funciones biológicas y vías metabólicas enriquecidas entre los genes diferencialmente expresados. Esto permitió obtener una visión más completa de los procesos biológicos y funciones potencialmente afectadas por la sobreexpresión de Nmyc en el desarrollo pulmonar.
+
+En resumen, este estudio integrado de perfiles transcriptómicos en muestras de pulmón de ratón E-18 proporciona una comprensión más detallada de los cambios en la expresión génica asociados con la sobreexpresión de Nmyc. Estos hallazgos contribuyen a nuestro conocimiento de los mecanismos moleculares y los procesos biológicos involucrados en el desarrollo y la función pulmonar, y pueden tener implicaciones clínicas y terapéut
 
 # Objetivos
 
@@ -25,7 +41,7 @@ lang: Es-es
 
 ### Obtención de los datos
 
-Los datos utilizados en este estudio corresponden al conjunto de datos GSE6077, disponible en el repositorio público del Gene Expression Omnibus (GEO) de NCBI. Para acceder a estos datos, se visitó el sitio web del GEO (https://www.ncbi.nlm.nih.gov/geo/) y se realizó una búsqueda utilizando el identificador GSE6077. Posteriormente, se descargaron los archivos de datos relevantes para el estudio, que incluyeron los archivos de expresión génica en formato CEL.
+Los datos utilizados en este estudio corresponden al conjunto de datos GSE6077 (**Figura 1**), disponible en el repositorio público del Gene Expression Omnibus (GEO) de NCBI. Para acceder a estos datos, se visitó el sitio web del GEO (https://www.ncbi.nlm.nih.gov/geo/) y se realizó una búsqueda utilizando el identificador GSE6077. Posteriormente, se descargaron los archivos de datos relevantes para el estudio, que incluyeron los archivos de expresión génica en formato CEL.
 
 ![](C:\Users\Arialux\Documents\ShareX\Screenshots\2023-05\SumatraPDF_ki5XjOR6yp.png)
 
@@ -98,7 +114,7 @@ Como veremos a continuación, tras llevar a cabo el control de calidad de los da
 
 Los datos de expresión génica obtenidos a partir de los microarrays se sometieron a un proceso de normalización para ajustar las diferencias sistemáticas entre las muestras y garantizar una comparabilidad adecuada. Se utilizó el método de normalización Robust Multi-array Average (RMA) mediante la función "rma" en R, aplicada a los datos brutos de los microarrays ("rawData") (**Código 8**).
 
-Para el filtrado de genes, se utilizó el paquete "genefilter" en R. Primero, se asignó el tipo de anotación de genes mediante la función "annotation", estableciéndolo como "moe430a". Esto permitió la asociación de las sondas de expresión con las anotaciones de genes correspondientes. A continuación, se aplicó un filtro basado en la variabilidad de la expresión génica utilizando la función "nsFilter". Se utilizó el Rango Intercuartílico (IQR) como medida de variabilidad y se estableció un umbral de corte del 75% para seleccionar el 25% de los genes con mayor variabilidad (**Código 9**).
+Para el filtrado de genes, se utilizó el paquete "genefilter" en R. Primero, se asignó el tipo de anotación de genes mediante la función "annotation", estableciéndolo como "moe430a". Esto permitió la asociación de las sondas de expresión con las anotaciones de genes correspondientes. A continuación, se aplicó un filtro basado en la variabilidad de la expresión génica utilizando la función "nsFilter". Se utilizó el Rango Intercuartílico (IQR) como medida de variabilidad y se estableció un umbral de corte del 75% para seleccionar el 25% de los genes con mayor variabilidad (**Código 9**). También se eliminaron los genes sin ENTREZID. Se eliminaron 8298 valores repetidos, 9818 por baja variabilidad y 1288 por falta de ENTREZID, quedando un total de 3273 genes para el posterior análisis.
 
 Con estos métodos de preprocesamiento, se logró la normalización de los datos brutos y el filtrado de genes con el objetivo de obtener un conjunto de datos de expresión génica de mayor calidad y relevancia para el análisis de expresión diferencial entre la línea celular con sobreexpresión de Nmyc y la línea Wild type.
 
@@ -120,17 +136,11 @@ Con el objetivo de comprender mejor la función biológica de los genes diferenc
 
 # Resultados
 
-# Discusión
+### Control de calidad
 
-# Referencias
+En el histograma (**Figura 2**), se observó que los cuatro arrays analizados presentaron una distribución y forma similar de los datos. No se detectaron anomalías evidentes en las distribuciones de intensidad de expresión, lo que sugiere una consistencia en los perfiles de expresión entre las muestras.
 
-# Apéndice
-
- 
-
-Como veremos a continuación, no detectamos ningún problema con los datos. Así que tan sólo ejecutaremos el análisis de calidad antes de la normalización y no después.
-
-### Histograma
+En el boxplot (**Figura 3**), se evaluó la intensidad de expresión en cada muestra y se encontró que todas las muestras exhibieron niveles de intensidad comparables. No se observaron valores atípicos o discrepancias significativas en la distribución de la intensidad entre las muestras, lo que indica una homogeneidad en la calidad de los datos y una ausencia de efectos técnicos o artefactos en las mediciones.
 
 ```{r}
 # Código 3
@@ -140,18 +150,18 @@ hist(rawData, main="Signal distribution", col=sampleColor, lty=affyLineas)
 legend (x="topright", legend=sampleNames , col=sampleColor, lty=affyLineas, cex=0.7)
 ```
 
-Como podemos ver, los 4 arrays dibujan una distribución de similar forma y posición. Esto sugiere que las expresiones no han sido afectadas por ningún aspecto técnico, y que la ligera variación que vemos en GSM140863 se debe a efectos biológicos.
-
-### Boxplot
-
 ```{r}
 # Código 4
 boxplot(rawData, which = "all", las = 2, main="Distribución de las expresiones", col=sampleColor, names = sampleNames, cel.axis = 0.6)
 ```
 
-Nuevamente, el boxplot nos da una idea de la intensidad de la expresión, que es muy similar en todos los arrays.
+El análisis de componentes principales (PCA) fue realizado para examinar la estructura de las muestras en relación a su expresión génica y detectar posibles agrupamientos naturales (**Figura 4**). El PCA es una técnica estadística que busca identificar las principales fuentes de variabilidad en los datos y representarlas en un espacio de menor dimensión. En nuestro estudio, observamos que las muestras correspondientes a la línea celular "Wild Type" parecen agruparse cercanamente entre sí en comparación con las muestras que presentan sobreexpresión de Nmyc, las cuales se encuentran más alejadas de éstas.
 
-### Análisis de componentes principales
+Es importante destacar que esta separación observada en el PCA no necesariamente indica la presencia de problemas en los datos, pero sugiere la necesidad de considerar la posible existencia de un efecto batch. El efecto batch se refiere a las diferencias sistemáticas que pueden surgir cuando se procesan y analizan muestras por separado, lo cual podría deberse a problemas técnicos durante la hibridación, preparación o escaneo de las muestras. Por lo tanto, es recomendable realizar una normalización de los datos para eliminar estas diferencias sistemáticas entre las muestras y reducir el impacto potencial del efecto batch en los resultados del análisis.
+
+Al examinar los ejes del gráfico de PCA, observamos que el primer componente principal explica aproximadamente el 70% de la variabilidad total en los datos, mientras que el segundo componente explica alrededor del 22%. Estos porcentajes de variabilidad son altos, especialmente para el primer componente, lo que indica que con solo este componente se puede explicar la mayor parte de la variabilidad y distinguir entre las dos categorías de muestras. De hecho, si observamos detenidamente, podríamos trazar una línea vertical que separa claramente los datos, lo que resalta la capacidad del primer componente para capturar la variabilidad y permitir la diferenciación de las muestras en las dos categorías.
+
+Explorando el cluster jerárquico observamos resultados similar al PCA, ya que las muestras correspondientes a la línea celular "Wild Type" muestran una mayor similitud entre sí en comparación con las muestras con sobreexpresión de Nmyc (**Figura 5**). Este patrón sugiere que las muestras Wild Type comparten perfiles de expresión génica más similares, mientras que las muestras con sobreexpresión presentan una mayor variabilidad entre ellas. Al realizar el cluster jerárquico con el paquete ArrayQualityMetrics, sí observamos como las dos muestras con sobreexpresión son más similares entre ellas (**Figura 6**). Estas diferencias pueden deberse al método de clustering o las características consideradas para el análisis.
 
 ```{r}
 # Código 5
@@ -175,21 +185,19 @@ plotPCA <- function ( X, labels=NULL, colors=NULL, dataDesc="", scale=FALSE)
 plotPCA(exprs(rawData), labels=sampleNames, colors = sampleColor)
 ```
 
-El análisis de componentes principales nos permite detectar si las muestras se agrupan de forma "natural", ya que éste busca las principales fuentes de variabilidad en los datos. En este caso vemos como las líneas "Wild Type" parecen estar agrupadas, mientras que las que presentan sobreexpresión se alejan del resto. Esto no tiene porque ser indicativo de la existencia de un problema, pero sí deberemos estar al cuidado de un posible efecto batch. Éste sucede cuando se observan diferencias entre muestras que fueron procesadas y analizadas separadamente, podría deberse a problemas técnicos en la hibridación, preparación o escaneo de las muestras. Por este tipo de efectos, es conveniente normalizar las muestras para así eliminar las diferencias sistemáticas entre muestras.
-
-Los axis del gráfico nos muetran que el primer componente explica casi el 70% de la variabilidad de los datos, y el segundo componente el 22%. Este porcentaje es muy elevado, sobretodo para el primer componente, si nos fijamos bien, podríamos dibujar una línea vertical que nos separa los datos, así que con tan solo el primer componente podemos explicar la variabilidad de los datos y separar en las dos categorías los datos.
-
-### Cluster Jerárquico
-
 ```{r}
 # Código 6
 clust.euclid.average = hclust(dist(t(exprs(rawData))),method="average")
 plot(clust.euclid.average, labels=sampleNames, main="Hierarchical clustering of samples",  hang=-1, cex=0.7)
 ```
 
-Al igual que en el análisis de componentes principales, vemos como las muestras Wild Type son más similares entre ellas, mientras que las Sobreexpresadas difieren más. Una posible explicación de ésta variación sería que efecto de las condiciones experimentales afecte tan sólo a un reducido número de genes, o bien que haya algún error en la sobreexpresión de una de las réplicas. 
+![hm](D:/Antiguos estudios/MASTER2/Sem2/Ómica/PAC2/OMICA-2/Calidad_RawData/hm.png)
 
-# Control de calidad con ArrayQualityMetrics
+Durante el análisis de calidad de los arrays, no se detectó la presencia de ningún array problemático (**Figura 7**). Se llevaron a cabo diversas estrategias para la detección de outliers, incluyendo la evaluación de las distancias entre arrays, los boxplots y los gráficos Ma, y en ninguno de los casos se observaron valores que superaran el umbral establecido para identificar outliers. Estos resultados indican que las muestras analizadas en este estudio no presentan valores extremos que puedan afectar negativamente la integridad de los datos y la interpretación de los resultados.
+
+![](C:/Users\Arialux\Documents\ShareX\Screenshots\2023-05\firefox_2dxk75sT6k.png)
+
+Los gráficos de MSD (Mean Standard Deviation) permiten detectar posibles sesgos técnicos, outliers y efectos de batch. En el eje Y se representa la desviación estándar de la intensidad, que es una medida de la variabilidad de la expresión génica, mientras que en el eje X se muestra la media de la intensidad, que es una medida de la expresión génica promedio. En nuestro estudio, al analizar el gráfico MSD, observamos que la mayoría de los genes presentan poca variabilidad en las muestras, ya que la línea roja que representa la desviación estándar se mantiene prácticamente horizontal (**Figura 8**).
 
 ```{r}
 # Código 7
@@ -197,47 +205,14 @@ library(arrayQualityMetrics)
 arrayQualityMetrics(rawData, reporttitle = "Calidad_RawData", force = TRUE)
 ```
 
-El paquete arrayQualityMetrics también nos da información sobre la calidad de las muestras, que es guardada en un directorio "Calidad_RawData". Parte de la información que nos muestra ya la hemos analizado mediante el boxplot, histograma, análisis de cluster, etc. Sin embargo, me parece adecuado mencionar la existencia de este paquete e incluir algunos de los análisis que aportan nueva información.
-
-### Outliers
-
-![Outliers](C:/Users\Arialux\Documents\ShareX\Screenshots\2023-05\firefox_2dxk75sT6k.png)
-
-No observamos ningún array problemático. Se han realizado detección de outliers tanto por distancias entre arrays, boxplots y Ma plots, y en ninguno de los tres casos se supera el umbral. 
-
-### msd
-![msd](D:/Antiguos estudios\MASTER2\Sem2\Ómica\PAC2\OMICA-2\Calidad_RawData\msd.png)
-
-Los gráficos MSD son útiles para estudiar la calidad y variabilidad de los datos. Pueden detectar sesgos técnicos, outliers y efectos de batch. En ellos, el eje Y representa la desviación estándar de la intensidad (medida de la variablidad), y en el X la media de la intensidad (medida de expresión).
-
-En nuestro caso, la gran mayoría de genes presentan poca variabilidad en las muestras y observamos la línea roja prácticamente horizontal. Ciertos genes, sobretodo los de más expresión, sí presentan variabilidad. Esto puede deberse a que al contar con múltiples líneas celulares, en alguna de las líneas haya genes sobreexpresados y por lo tanto observemos variabilidad. Tiene sentido, pues contamos con dos líneas celulares con nmyc sobreexpresado que al ser un factor de transcripción, podría alterar la transcripción de múltiples genes.
-
-### MA-plot
-
-![ma](D:/Antiguos estudios\MASTER2\Sem2\Ómica\PAC2\OMICA-2\Calidad_RawData\ma.png)
-
-El MA-plot nos permite ver la calidad individual de cada array. En el eje M vemos el la dirección e intensidad del cambio en la expresión génica, mientras que en el eje A vemos la expresión media de cada gen entre las dos condiciones. Este tipo de gráficos son útiles para detectar sesgos sistemáticos o artefactos.
-
-En nuestro caso, no vemos ninguna anormalidad, podemos ver que los genes se distribuyen alrededor de M = 0 sin ver ningún patrón o tendencia clara. 
-
-### Heatmap
-
-![hm](D:/Antiguos estudios/MASTER2/Sem2/Ómica/PAC2/OMICA-2/Calidad_RawData/hm.png)
-
-Heatmap falso del array de expresiones que muestra las distancias entre arrays. No encontramos ninguna anormalidad. En este caso si vemos como las muestras sobreexpresadas son más similares entre ellas en cuanto a expresión que las WT en el cluster jerárquico.
-
-# Normalización
-
-Antes de empezar los análisis de expresión es muy importante normalizar los datos para hacerlos comparables e intentar eliminar la variabilidad que no tenga origen biológico. 
+En conjunto, estos resultados respaldan la calidad de los datos de microarray Affymetrix utilizados en el estudio, lo cual es un paso importante para garantizar resultados confiables y válidos en el análisis de expresión diferencial entre las líneas celulares con sobreexpresión de Nmyc y Wild type.
 
 ```{r}
 # Código 8
 eset = rma(rawData) # Normalize rawData
 print(eset)
 ```
-# Filtrado
 
-Realizaremos un filtrado de genes no específico, eliminando genes por características no relacionadas con el tema del estudio. En específico, eliminaremos genes sin identificador ENTREZID y genes que varían poco usando el rango interquartil quedándonos con el 25% más variable que tienen ENTREZID. El filtrado nos permite reducir el número de genes de estudio y por tanto reducir el número de tests estadísticos a realizar, reduciendo así el error estadístico.
 
 ```{r}
 # Código 9
@@ -253,13 +228,9 @@ expressionSet = exprs(filteredEset)
 colnames(expressionSet) = pData(filteredEset)$ShortName
 ```
 
-En este caso vemos como se han eliminado 8298 valores repetidos, 9818 por baja variabilidad y 1288 por falta de identificador ENTREZ. Ahora contamos con 3273 genes.
+### Análisis de expresión diferencial
 
-# Análisis
-
-### Matriz de diseño
-
-La matriz de diseño es una tabla que contiene la información de cada muestra con respecto a su grupo experimental. En nuestro caso tenemos 4 muestras así que contaremos con 4 filas, y sólo tenemos un factor experimental (tipo de línea celular) que tiene dos posibles opciones (WT o OE), así que tendremos 2 columnas.
+Se generó una tabla que contiene los genes más variables en nuestro conjunto de datos (**Tabla 1**). Para identificar estos genes, se utilizó un criterio basado en la variabilidad de la expresión génica entre las muestras analizadas. Se seleccionaron aquellos genes que mostraron una alta variabilidad en su expresión, lo que sugiere una mayor dinámica en su regulación y potencial importancia biológica. Estos genes representan candidatos prometedores para futuros estudios de función y regulación en relación con el proceso biológico en estudio. La tabla de genes más variables proporciona una valiosa información sobre la heterogeneidad y la diversidad de las respuestas génicas en nuestro modelo experimental.
 
 ```{r}
 # Código 10
@@ -274,12 +245,6 @@ rownames(designMat) = sampleNames
 print(designMat)
 ```
 
-### Matriz de contrastes
-
-La matriz de contrastes describe las comparaciones entre grupos que queremos realizar. Tiene tantas columnas como comparaciones y tantas filas como grupos. Cada comparación o contraste se representa por un 1 y un -1 en las filas a comparar.
-
-En nuestro caso tenemos un diseño muy simple, queremos comparar los efectos de sobreexpresar nmyc, así que compararemmos WT vs OE.  
-
 ```{r}
 # Código 11
 
@@ -288,7 +253,6 @@ cont.matrix = makeContrasts(OEvsWT = OE-WT, levels = designMat)
 comparisonName = "Efecto de la sobreexpresion"
 print(cont.matrix)
 ```
-### Estimación del modelo
 
 ```{r}
 # Código 12
@@ -304,10 +268,6 @@ topTab = topTable(fit.main, number = nrow(fit.main), coef = "OEvsWT", adjust = "
 dim(topTab)
 head(topTab)
 ```
-
-# Anotación de resultados
-
-Extraemos los identificadores de los genes a ENTREZID, SYMBOL y ENSEMBL.
 
 ```{r}
 # Código 13
@@ -325,12 +285,12 @@ topTabAnotada = topTab %>% # Copiamos la topTable
   arrange(P.Value) %>%
   select(7:10, 1:6)
 
-head(topTabAnotada)
+topTabAnotada
 ```
 
-# Resultados
+La tabla de genes resultante muestra que todos los genes incluidos presentan una diferencia estadísticamente significativa en su expresión (pv < 0.01). Además, se observó que el cambio en la expresión de estos genes varía de 5 a 11 veces, lo que indica que son genes altamente variables en el contexto del estudio. Estos resultados respaldan la hipótesis de que la sobreexpresión de Nmyc tiene un impacto significativo en la expresión génica y resalta la importancia de estos genes en la regulación y el proceso biológico en estudio.
 
-### Volcano plot
+Confirmamos estos resultados mediante la realización de un Volcano Plot (**Figura 9**). Observamos que los genes situados en las esquinas superiores (aquellos más diferencialmente expresados) coinciden con los de la tabla. 
 
 ```{r}
 # Código 14
@@ -339,9 +299,7 @@ volcanoplot(fit.main, highlight = 10, names = genenames, main = paste("Genes dif
 abline(v = c(-3, 3))
 ```
 
-Recordamos que los genes más diferencialmente expresados son aquellos más a los extremos y arriba. 
-
-### Heatmap
+Para visualizar de manera más clara las diferencias en la expresión génica entre los grupos, se generó un mapa de calor (heatmap) utilizando los genes identificados como diferencialmente expresados. Es importante destacar que previamente se realizó un filtrado de los genes más variables, por lo que no es sorprendente encontrar una amplia gama de diferencias entre los grupos. Al examinar el heatmap, se observa que la mayoría de los genes muestran una disminución en su expresión en la línea celular con Nmyc sobreexpresado en comparación con la línea Wild Type. Sin embargo, también se identificaron algunos genes que presentan una sobreexpresión en la línea con Nmyc sobreexpresado. Estos resultados proporcionan una visión detallada de las diferencias en la expresión génica entre los grupos, subrayando el efecto de la sobreexpresión de Nmyc en la regulación de genes específicos.
 
 ```{r}
 # Código 15
@@ -371,11 +329,9 @@ heatmap.2(selectedData,
          srtCol = 30)
 ```
 
-Cabe destacar que nosotros ya hemos realizado un filtraje de los genes más variables, por ello no es sorpresa que los resultados muestren tantas diferencias entre ambos grupos.
-
 ### Análisis de sobrerepresentación
 
-Éste tipo de análisis muestra si entre las anotaciones de los genes, hay alguna categoría de GO que se repita más frecuentemente que si no hubiera expresión diferencial. Esto nos da una idea de a qué proceso biológico estan asociados los genes más variables en el estudio.
+Para determinar si existen categorías funcionales de genes que estén sobre-representadas en nuestro conjunto de genes diferencialmente expresados, se llevó a cabo un análisis de sobrerepresentación utilizando las anotaciones del Gene Ontology (GO) (**Tabla 2**). Uno de los resultados más destacados de este análisis fue la identificación de la categoría funcional "GO:0019835" asociada a la citólisis. Se observó que esta categoría estaba representada significativamente más veces de lo esperado, con un valor de fold de 265.
 
 ```{r}
 # Código 16
@@ -397,18 +353,48 @@ GOparams = new("GOHyperGParams", geneIds = topGenes, universeGeneIds = entrezUni
 GOhyper = hyperGTest(GOparams) # Fisher test
 head(summary(GOhyper))
 dim(summary(GOhyper))
-
 ```
 
-Como podemos ver, el parámetro "GO:0019835" se encuentra 265 veces más (folds) de las esperadas. Éste corresponde a citolisis.
+Además de la categoría funcional de la citólisis, se identificaron varias anotaciones enriquecidas adicionales con un valor de p significativo de 0.01. Estas anotaciones incluyen el desarrollo embrionario de los cordados, el desarrollo embrionario resultante en parto, la defensa contra bacterias Gram positivas y el metabolismo de los glicerolípidos. Estos hallazgos sugieren que estos procesos biológicos pueden estar estrechamente relacionados con la sobreexpresión de Nmyc y podrían desempeñar un papel importante en la respuesta celular y los mecanismos fisiológicos asociados. Estas anotaciones enriquecidas proporcionan una visión más completa de las vías biológicas y los procesos funcionales que pueden estar influenciados por la sobreexpresión de Nmyc, y podrían ser objeto de futuras investigaciones para comprender mejor su implicación en el contexto de nuestro estudio.
 
-# Random BS GO
-https://support.bioconductor.org/p/41945/
-https://support.bioconductor.org/p/64888/
-https://support.bioconductor.org/p/46513/
-https://rdrr.io/bioc/Biobase/man/phenoData.html
-https://support.bioconductor.org/p/64888/
+# Discusión
+
+La presente discusión se centra en los resultados obtenidos del análisis del perfil de expresión génica en muestras de pulmón de ratón E-18, donde se evaluó el efecto de la sobreexpresión de NMYC. Los resultados de los métodos de control de calidad mostraron que los datos obtenidos eran de alta calidad y no se detectaron anomalías en las muestras analizadas. Esto respalda la fiabilidad de los resultados y proporciona una base sólida para el análisis posterior.
+
+El análisis de componentes principales (PCA) reveló una agrupación natural de las muestras en función del tipo de línea celular. Las muestras de tipo "Wild Type" se agruparon de manera similar, mientras que las muestras con sobreexpresión de NMYC mostraron una separación más pronunciada. Esta observación sugiere que la sobreexpresión de NMYC puede tener un efecto significativo en el perfil de expresión génica y puede influir en la variabilidad entre las muestras. El análisis de clúster jerárquico también respaldó esta observación, mostrando una mayor similitud entre las muestras de tipo "Wild Type" y una mayor variabilidad entre las muestras con sobreexpresión de NMYC. Estos resultados sugieren que la sobreexpresión de NMYC puede influir en la expresión de genes específicos y potencialmente afectar la regulación de procesos biológicos clave en el pulmón.
+
+La identificación de los genes más variables a través de la tabla de genes diferencialmente expresados proporcionó una visión más detallada de los cambios en la expresión génica. Todos los genes en la tabla mostraron p-valores significativos, lo que indica que su expresión difiere de manera significativa entre los dos grupos. Además, se observó una amplia gama de cambios en la expresión, con un rango de 5 a 11 veces en relación a los niveles de expresión basal. Esto sugiere que la sobreexpresión de NMYC puede tener un impacto significativo en la regulación de la expresión génica y afectar a múltiples vías biológicas en el pulmón.
+
+El análisis de sobrerepresentación de categorías GO reveló varias anotaciones enriquecidas significativamente, incluyendo el desarrollo embrionario de los cordados, desarrollo embrionario resultante en parto, defensa contra bacterias Gram+ y metabolismo de los glicerolipidos. Estas anotaciones proporcionan información relevante sobre los procesos biológicos que podrían estar modulados por la sobreexpresión de NMYC en el pulmón. 
+
+Aunque gracias a estos análisis se pueden intuir las implicaciones funcionales de la sobreexpresión de Nmyc, se debe llevar a cabo un análisis funcional más detallado de los genes diferencialmente expresados identificados en este estudio. Esto implica investigar las funciones biológicas específicas de estos genes, así como las vías de señalización y los procesos celulares en los que están involucrados. Esto proporcionará una comprensión más completa de los mecanismos subyacentes a la influencia de la sobreexpresión de NMYC en el pulmón.
+
+A pesar de los resultados prometedores obtenidos en este estudio, es importante reconocer algunas limitaciones que podrían haber afectado la interpretación de los hallazgos y que deben abordarse en futuras investigaciones.
+
+En primer lugar, es necesario considerar el tamaño limitado de la muestra en este estudio. Aunque se realizaron análisis estadísticos rigurosos, el uso de un número reducido de muestras puede limitar la generalización de los resultados. La inclusión de un mayor número de muestras, tanto biológicas como técnicas, aumentaría la robustez de los hallazgos y permitiría una mayor confianza en las conclusiones.
+
+Además, es importante destacar que este estudio se centró en un modelo de pulmón de ratón en la etapa E-18. Si bien este modelo proporciona información valiosa sobre la influencia de la sobreexpresión de NMYC en el pulmón en una etapa específica del desarrollo, no se pueden extrapolar directamente estos resultados a otros contextos, como el pulmón humano adulto o enfermedades pulmonares específicas. Se requieren estudios adicionales utilizando modelos relevantes y datos clínicos de pacientes para validar los hallazgos y comprender mejor su relevancia clínica.
+
+Otra limitación a considerar es el enfoque exclusivo en la sobreexpresión de NMYC y su efecto en la expresión génica. Es importante reconocer que la regulación génica es un proceso complejo que involucra múltiples factores y mecanismos, y que otros factores de transcripción y vías de señalización pueden interactuar con NMYC para modular la expresión génica. La inclusión de un análisis más amplio de otros genes y factores relevantes permitiría una comprensión más completa de las redes de regulación génica implicadas.
+
+Por último, cabe mencionar que este estudio se basó en el análisis de datos de microarrays, que aunque sigue siendo una herramienta útil, el uso de técnicas de NGS, como el ARN-Seq, permitiría una caracterización más exhaustiva del transcriptoma y una identificación más precisa de los genes diferencialmente expresados. Alternativamente, una validación mediante qPCR o Western Blot seria conveniente para confirmar las observaciones realizadas.
+
+En el futuro, se debe llevar a cabo un análisis funcional más detallado de los genes diferencialmente expresados identificados en este estudio. Esto implica investigar las funciones biológicas específicas de estos genes, así como las vías de señalización y los procesos celulares en los que están involucrados. Esto proporcionará una comprensión más completa de los mecanismos subyacentes a la influencia de la sobreexpresión de NMYC en el pulmón.
+
+En conclusión, los resultados de este estudio indican que la sobreexpresión de NMYC en el pulmón de ratón E-18 tiene un impacto significativo en el perfil de expresión génica. Se observaron diferencias en la expresión de genes específicos, así como cambios en la regulación de vías biológicas relevantes para el desarrollo pulmonar. Estos hallazgos brindan nuevas perspectivas sobre la función de NMYC en el pulmón y pueden tener implicaciones en la comprensión de enfermedades pulmonares.
+
+# Referencias
+
+Cox, B., Kislinger, T., Wigle, D. A., Kannan, A., Brown, K., Okubo, T., ... & Emili, A. (2007). Integrated proteomic and transcriptomic profiling of mouse lung development and Nmyc target genes. Molecular systems biology, 3(1), 109.
+
+Gautier, L., Cope, L., Bolstad, B. M., & Irizarry, R. A. (2004). affy—analysis of Affymetrix GeneChip data at the probe level. Bioinformatics, 20(3), 307-315.
+
+Rickman, D. S., Schulte, J. H., & Eilers, M. (2018). The expanding world of N-MYC–driven tumors. Cancer discovery, 8(2), 150-163.
+
+Ritchie, M. E., Phipson, B., Wu, D. I., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K. (2015). limma powers differential expression analyses for RNA-sequencing and microarray studies. Nucleic acids research, 43(7), e47-e47.
+
+# Apéndice
+ 
 
 
-Ultimate
-https://aspteaching.github.io/Analisis_de_datos_omicos-Materiales_para_un_curso/exploraci%C3%B3n-de-los-datos-control-de-calidad-y-preprocesado.html
+

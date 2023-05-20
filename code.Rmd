@@ -17,7 +17,7 @@ output: word_document
  install.packages("htmlTable")
  install.packages("prettydoc")
  install.packages("devtools")
- install.packages("BiocManager")
+ install.packages("BiocManager")3
  BiocManager::install("oligo")
  BiocManager::install("pd.mogene.2.1.st")
  BiocManager::install("arrayQualityMetrics")
@@ -276,7 +276,7 @@ topTabAnotada = topTab %>% # Copiamos la topTable
   arrange(P.Value) %>%
   select(7:10, 1:6)
 
-head(topTabAnotada)
+topTabAnotada
 ```
 
 # Resultados
